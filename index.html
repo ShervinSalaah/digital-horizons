@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Digital Horizons Leaderboard</title>
+
+    <!-- This script forces the browser to load Tailwind instantly -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- This sets up your exact green theme -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                light: '#dcfce7',
+                DEFAULT: '#22c55e',
+                dark: '#166534',
+              }
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
