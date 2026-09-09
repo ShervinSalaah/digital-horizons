@@ -12,15 +12,14 @@ export default function AdminDashboard() {
   const [selectedCategory, setSelectedCategory] = useState('Challenge');
   const [points, setPoints] = useState(0);
   const [status, setStatus] = useState({ type: '', message: '' });
+  const [passStatus, setPassStatus] = useState({ type: '', message: '' });
 
   useEffect(() => {
-    // Check active login session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) fetchParticipants();
     });
 
-    // Listen for login/logout events
     supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) fetchParticipants();
@@ -62,26 +61,42 @@ export default function AdminDashboard() {
       setStatus({ type: 'error', message: error.message });
     } else {
       setStatus({ type: 'success', message: 'Points successfully added!' });
-      setPoints(0); // Reset points input
+      setPoints(0);
       setTimeout(() => setStatus({ type: '', message: '' }), 3000);
+    }
+  }
+
+  async function handleUpdatePassword(e) {
+    e.preventDefault();
+    const newPassword = e.target.newPassword.value;
+    setPassStatus({ type: 'loading', message: 'Updating password...' });
+
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      setPassStatus({ type: 'error', message: error.message });
+    } else {
+      setPassStatus({ type: 'success', message: 'Password updated successfully!' });
+      e.target.reset();
+      setTimeout(() => setPassStatus({ type: '', message: '' }), 3000);
     }
   }
 
   // --- LOGIN SCREEN ---
   if (!session) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-brand-light/30 p-6">
-        <form onSubmit={handleLogin} className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-          <h2 className="text-2xl font-bold text-brand-dark mb-6 text-center">Admin Login</h2>
+      <div className="min-h-screen bg-[#03150e] flex items-center justify-center p-6 relative overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-yellow-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <form onSubmit={handleLogin} className="bg-[#0a261a]/80 backdrop-blur-md border border-[#eab308]/30 p-8 rounded-xl shadow-2xl w-full max-w-md relative z-10">
+          <h2 className="text-3xl font-serif text-[#eab308] font-bold mb-6 text-center">Admin Portal</h2>
           {status.message && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">{status.message}</div>
+            <div className="mb-4 p-3 bg-red-900/50 border border-red-500 text-red-200 rounded text-sm">{status.message}</div>
           )}
           <input
             type="email"
             placeholder="Admin Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded mb-4 focus:outline-none focus:border-brand"
+            className="w-full bg-[#03150e]/60 border border-emerald-900/50 text-emerald-100 placeholder-emerald-700/60 p-3 rounded-lg mb-4 focus:outline-none focus:border-[#eab308]/60 transition-all"
             required
           />
           <input
@@ -89,10 +104,10 @@ export default function AdminDashboard() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded mb-6 focus:outline-none focus:border-brand"
+            className="w-full bg-[#03150e]/60 border border-emerald-900/50 text-emerald-100 placeholder-emerald-700/60 p-3 rounded-lg mb-6 focus:outline-none focus:border-[#eab308]/60 transition-all"
             required
           />
-          <button type="submit" className="w-full bg-brand hover:bg-brand-dark text-white font-bold py-3 rounded transition-colors">
+          <button type="submit" className="w-full bg-[#eab308] hover:bg-yellow-400 text-slate-950 font-bold py-3 rounded-lg transition-colors shadow-lg">
             Log In
           </button>
         </form>
@@ -100,79 +115,109 @@ export default function AdminDashboard() {
     );
   }
 
-  // --- POINT MANAGEMENT SCREEN ---
+  // --- ADMIN MANAGEMENT & PASSWORD SCREEN ---
   return (
-    <div className="min-h-screen bg-brand-light/30 p-6">
-      <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="bg-brand text-white p-6 flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Manage Points</h1>
-          <button onClick={handleLogout} className="bg-brand-dark hover:bg-brand-light hover:text-brand-dark px-4 py-2 rounded text-sm font-semibold transition-colors">
+    <div className="min-h-screen bg-[#03150e] text-emerald-50 font-sans p-6 pb-16 relative overflow-hidden">
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/15 rounded-full blur-[120px] pointer-events-none"></div>
+
+      <div className="max-w-2xl mx-auto space-y-6 relative z-10">
+        
+        {/* Top Header Card */}
+        <div className="bg-[#0a261a]/70 backdrop-blur-md border border-[#eab308]/30 p-6 rounded-xl shadow-2xl flex justify-between items-center">
+          <h1 className="text-2xl font-serif text-[#eab308] font-bold">Manage Points</h1>
+          <button onClick={handleLogout} className="bg-emerald-900/50 hover:bg-emerald-800 text-emerald-200 border border-emerald-700/50 px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
             Log Out
           </button>
         </div>
 
-        <form onSubmit={handleSubmitPoints} className="p-6 space-y-5">
-          {status.message && (
-            <div className={`p-3 rounded text-sm font-semibold ${status.type === 'success' ? 'bg-green-100 text-brand-dark' : 'bg-red-100 text-red-700'}`}>
-              {status.message}
-            </div>
-          )}
+        {/* Points Submission Form */}
+        <div className="bg-[#0a261a]/70 backdrop-blur-md border border-emerald-900/40 p-6 rounded-xl shadow-2xl">
+          <form onSubmit={handleSubmitPoints} className="space-y-5">
+            {status.message && (
+              <div className={`p-3 rounded-lg text-sm font-semibold ${status.type === 'success' ? 'bg-emerald-900/50 text-emerald-200 border border-emerald-500' : 'bg-red-900/50 text-red-200 border border-red-500'}`}>
+                {status.message}
+              </div>
+            )}
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Select Participant</label>
-            <select 
-              value={selectedParticipant} 
-              onChange={(e) => setSelectedParticipant(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded focus:border-brand focus:outline-none"
-              required
-            >
-              {participants.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Session</label>
+              <label className="block text-sm font-semibold text-emerald-200 mb-2">Select Participant</label>
               <select 
-                value={selectedEventSession} 
-                onChange={(e) => setSelectedEventSession(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded focus:border-brand focus:outline-none"
+                value={selectedParticipant} 
+                onChange={(e) => setSelectedParticipant(e.target.value)}
+                className="w-full bg-[#03150e]/60 border border-emerald-900/50 text-emerald-100 p-3 rounded-lg focus:outline-none focus:border-[#eab308]/60 transition-all cursor-pointer"
+                required
               >
-                {[1, 2, 3, 4, 5, 6].map(num => (
-                  <option key={num} value={num}>Session {num}</option>
+                {participants.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Category</label>
-              <select 
-                value={selectedCategory} 
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded focus:border-brand focus:outline-none"
-              >
-                <option value="Challenge">Challenge</option>
-                <option value="Quiz">Quiz</option>
-              </select>
-            </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Points (Use negative to remove)</label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-emerald-200 mb-2">Session</label>
+                <select 
+                  value={selectedEventSession} 
+                  onChange={(e) => setSelectedEventSession(e.target.value)}
+                  className="w-full bg-[#03150e]/60 border border-emerald-900/50 text-emerald-100 p-3 rounded-lg focus:outline-none focus:border-[#eab308]/60 transition-all cursor-pointer"
+                >
+                  {[1, 2, 3, 4, 5, 6].map(num => (
+                    <option key={num} value={num}>Session {num}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-emerald-200 mb-2">Category</label>
+                <select 
+                  value={selectedCategory} 
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full bg-[#03150e]/60 border border-emerald-900/50 text-emerald-100 p-3 rounded-lg focus:outline-none focus:border-[#eab308]/60 transition-all cursor-pointer"
+                >
+                  <option value="Challenge">Challenge</option>
+                  <option value="Quiz">Quiz</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-emerald-200 mb-2">Points (Use negative to remove)</label>
+              <input
+                type="number"
+                value={points}
+                onChange={(e) => setPoints(e.target.value)}
+                className="w-full bg-[#03150e]/60 border border-emerald-900/50 text-emerald-100 p-3 rounded-lg focus:outline-none focus:border-[#eab308]/60 transition-all"
+                required
+              />
+            </div>
+
+            <button type="submit" className="w-full bg-[#eab308] hover:bg-yellow-400 text-slate-950 font-bold py-3 rounded-lg transition-colors shadow-lg">
+              Save Points
+            </button>
+          </form>
+        </div>
+
+        {/* Change Password Section */}
+        <div className="bg-[#0a261a]/70 backdrop-blur-md border border-emerald-900/40 p-6 rounded-xl shadow-2xl">
+          <h3 className="text-xl font-serif text-[#eab308] font-bold mb-4">Change Your Password</h3>
+          <form onSubmit={handleUpdatePassword} className="space-y-4">
+            {passStatus.message && (
+              <div className={`p-3 rounded-lg text-sm font-semibold ${passStatus.type === 'success' ? 'bg-emerald-900/50 text-emerald-200 border border-emerald-500' : 'bg-red-900/50 text-red-200 border border-red-500'}`}>
+                {passStatus.message}
+              </div>
+            )}
             <input
-              type="number"
-              value={points}
-              onChange={(e) => setPoints(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded focus:border-brand focus:outline-none"
+              type="password"
+              name="newPassword"
+              placeholder="Enter new private password"
+              className="w-full bg-[#03150e]/60 border border-emerald-900/50 text-emerald-100 placeholder-emerald-700/60 p-3 rounded-lg focus:outline-none focus:border-[#eab308]/60 transition-all"
               required
             />
-          </div>
+            <button type="submit" className="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-lg transition-colors">
+              Update Password
+            </button>
+          </form>
+        </div>
 
-          <button type="submit" className="w-full bg-brand hover:bg-brand-dark text-white font-bold py-3 rounded transition-colors">
-            Save Points
-          </button>
-        </form>
       </div>
     </div>
   );
